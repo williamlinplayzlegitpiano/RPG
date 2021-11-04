@@ -1,0 +1,3 @@
+class Pistol extends Weapons {
+  
+}
