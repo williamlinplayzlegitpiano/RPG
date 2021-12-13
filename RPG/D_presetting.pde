@@ -1,7 +1,3 @@
 void presetting() {
-  
-}
-
-void mouseReleased() {
- mode = game;
+  mode = game;
 }

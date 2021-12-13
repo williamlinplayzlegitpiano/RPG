@@ -1,16 +1,29 @@
 import processing.javafx.*;
 
+final int DMG = 0;
+final int HEALTH = 1;
+final int WEAPON = 2;
+final int SPEED = 3;
+
+int gun;
+int globaltimer;
+float dmgmult;
+
+boolean laserbeam;
+
 int mode;
 final int titlescreen = 1;
 final int presetting = 2;
 final int game = 3;
-final int revive = 4;
-final int gameover = 5;
+final int pause = 4;
+final int revive = 5;
+final int gameover = 6;
 
 AnimatedGIF introGIF;
-//AnimatedButton introButton;
+AnimatedGIF manLeft;
+AnimatedGIF manRight;
 
-boolean w, a, s, d;
+boolean w, a, s, d, space;
 
 color chocolate = #774F38;
 color strawberry = #E08E79;
@@ -33,7 +46,7 @@ ArrayList<GameObject> myObjects;
 ArrayList<DarknessCell> darkness;
 Hero myHero;
 
-Button startButton;
+Button startButton, pauseButtonHealth, pauseButtonSpeed, pauseButtonDmg, pauseButton, pauseButtonClose;
 //Button blueButton, greenButton, pinkButton, blackButton;
 //color bkg;
 
@@ -43,27 +56,38 @@ color pink   = #F76DDC;
 color yellow = #FFF387;
 color black  = #000000;
 color white  = #FFFFFF;
+color red = #FC1414;
 
 PImage map;
 
-int guntype;
+int immunity, immunitytimer;
 
 void setup() {
+
+  gun = 1;
+  globaltimer = 0;
+  dmgmult = 1;
+
+  laserbeam = false;
+
   size(800, 600, FX2D);
   mode = 1;
 
-  introGIF = new AnimatedGIF(14, "frame_", "_delay-0.15s.gif");
+  introGIF = new AnimatedGIF(13, 2, "introgif/frame_", "_delay-0.1s.gif", 0, 0, 50, 50);
+  manLeft = new AnimatedGIF(4, 10, "wizard/left/left_f", ".png");
+  manRight = new AnimatedGIF(4, 10, "wizard/right/right_f", ".png");
 
   Candy1 = createFont("Delight Candles .ttf", 200);
   Candy2 = createFont("Snowy Holiday.ttf", 200);
   Candy3 = createFont("Snowy Night.ttf", 200);
 
-  startButton = new Button("Candy Thief", 400, 340, 200, 100, sprinkle);
-  //bkg = white;
-  //blueButton  = new Button("BLUE", 200, 200, 200, 150, blue, pink);
-  //greenButton = new Button("GREEN", 200, 400, 200, 150, green, yellow);
-  //pinkButton  = new Button("PINK", 400, 650, 600, 200, pink, blue);
-  //blackButton = new Button("BLACK", 550, 300, 400, 350, black, white);
+  startButton = new Button("PLAY", 400, 340, 200, 100, sprinkle, chocolate, 45);
+
+  pauseButtonHealth = new Button("+ 10", 150, 175, 50, 50, sprinkle, chocolate, 15);
+  pauseButtonSpeed = new Button("+ 0.2", 150, 325, 50, 50, sprinkle, chocolate, 15);
+  pauseButtonDmg = new Button("x "+dmgmult, 150, 475, 50, 50, sprinkle, chocolate, 15);
+  pauseButton = new Button("PAUSE", 760, 40, 50, 50, sprinkle, chocolate, 10);
+  pauseButtonClose = new Button("X", 760, 40, 50, 50, sprinkle, chocolate, 20);
 
   textAlign(CENTER, CENTER);
   rectMode(CENTER);
@@ -72,7 +96,30 @@ void setup() {
   myHero = new Hero();
   myObjects = new ArrayList<GameObject>(1000);
   myObjects.add(myHero);
+
   map = loadImage("map.png");
+
+  int a = 0;
+  int b = 0;
+  while (b < map.height) {
+    color c = map.get(a, b);
+    if (c == pink) {
+      myObjects.add(new Follower(a, b));
+    }
+    if (c == blue) {
+      myObjects.add(new Shooter(a, b));
+    }
+    if (c == green) {
+      myObjects.add(new Pool(a, b));
+    }
+    if (c == yellow) {
+    }
+    a++;
+    if (a == map.width) {
+      a = 0;
+      b++;
+    }
+  }
 
   darkness = new ArrayList<DarknessCell>(1000);
   float size = 5;
@@ -81,30 +128,17 @@ void setup() {
     darkness.add(new DarknessCell(x, y, size));
     x += size;
     if (x >= width) {
-     x = 0;
-     y += size;
+      x = 0;
+      y += size;
     }
   }
 }
 
+
 void draw() {
 
+  globaltimer++;
   click();
-
-  //if (blueButton.clicked) {
-  //  bkg = blue;
-  //}
-  //if (greenButton.clicked) {
-  //  bkg = green;
-  //}
-  //if (pinkButton.clicked) {
-  //  bkg = pink;
-  //}
-  //if (blackButton.clicked) {
-  //  bkg = black;
-  //}
-
-  //guntype
 
   if (mode == titlescreen) {
     titlescreen();
@@ -112,6 +146,8 @@ void draw() {
     presetting();
   } else if (mode == game) {
     game();
+  } else if (mode == pause) {
+    pause();
   } else if (mode == revive) {
     revive();
   } else if (mode == gameover) {
