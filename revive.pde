@@ -1,0 +1,3 @@
+void revive () {
+ mode = gameover; 
+}
